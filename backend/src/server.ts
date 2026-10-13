@@ -45,10 +45,14 @@ app.use(cors({
       return callback(null, true);
     }
     const normalizedOrigin = origin.replace(/\/+$/, '');
-    if (allowedOrigins.has(normalizedOrigin)) {
+    if (
+      allowedOrigins.has(normalizedOrigin) ||
+      normalizedOrigin.endsWith('.vercel.app') ||
+      /^https:\/\/[a-z0-9-]+(\.vercel\.app)$/.test(normalizedOrigin)
+    ) {
       return callback(null, true);
     }
-    return callback(new Error(`CORS blocked for origin: ${origin}`));
+    return callback(null, false);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
