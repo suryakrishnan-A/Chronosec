@@ -10,6 +10,7 @@ import userRoutes from './routes/users';
 import dashboardRoutes from './routes/dashboard';
 import threatRoutes from './routes/threats';
 import { errorHandler, notFound } from './middleware/errorHandler';
+import prisma from './lib/prisma';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -84,10 +85,22 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 // Health check
-app.get('/health', (_req, res) => {
+app.get('/health', async (_req, res) => {
+  let dbStatus = 'disconnected';
+  let dbError: string | null = null;
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    dbStatus = 'connected';
+  } catch (err: any) {
+    dbError = err?.message || String(err);
+    console.error('Database health check failed:', err);
+  }
+
   res.json({
     success: true,
-    message: 'CyberShield AI Backend is running',
+    message: dbStatus === 'connected' ? 'CyberShield AI Backend is healthy' : 'Database connection unavailable',
+    database: dbStatus,
+    ...(dbError && { databaseError: dbError }),
     timestamp: new Date().toISOString(),
     version: '1.0.0',
   });

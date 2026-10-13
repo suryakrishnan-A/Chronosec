@@ -87,9 +87,13 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       message: 'Account created successfully',
       data: { user, accessToken, refreshToken },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Register error:', error);
-    res.status(500).json({ success: false, message: 'Internal server error' });
+    res.status(500).json({
+      success: false,
+      message: error?.message || 'Internal server error',
+      code: error?.code,
+    });
   }
 };
 
@@ -196,9 +200,13 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       message: 'Login successful',
       data: { user: userData, accessToken, refreshToken },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Login error:', error);
-    res.status(500).json({ success: false, message: 'Internal server error' });
+    res.status(500).json({
+      success: false,
+      message: error?.message || 'Internal server error',
+      code: error?.code,
+    });
   }
 };
 
@@ -279,9 +287,9 @@ export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
         refreshToken,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('OTP verify error:', error);
-    res.status(500).json({ success: false, message: 'Internal server error' });
+    res.status(500).json({ success: false, message: error?.message || 'Internal server error' });
   }
 };
 
@@ -326,9 +334,9 @@ export const refreshAccessToken = async (req: Request, res: Response): Promise<v
       message: 'Token refreshed',
       data: { accessToken: newAccessToken, refreshToken: newRefreshToken },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Refresh token error:', error);
-    res.status(500).json({ success: false, message: 'Internal server error' });
+    res.status(500).json({ success: false, message: error?.message || 'Internal server error' });
   }
 };
 
@@ -356,9 +364,9 @@ export const logout = async (req: AuthenticatedRequest, res: Response): Promise<
     }
 
     res.status(200).json({ success: true, message: 'Logged out successfully' });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Logout error:', error);
-    res.status(500).json({ success: false, message: 'Internal server error' });
+    res.status(500).json({ success: false, message: error?.message || 'Internal server error' });
   }
 };
 
@@ -380,9 +388,9 @@ export const sendOtp = async (req: Request, res: Response): Promise<void> => {
       message: 'OTP sent to email',
       data: { ...(process.env.NODE_ENV === 'development' && { otp }) },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Send OTP error:', error);
-    res.status(500).json({ success: false, message: 'Internal server error' });
+    res.status(500).json({ success: false, message: error?.message || 'Internal server error' });
   }
 };
 
@@ -429,8 +437,8 @@ export const oauthCallback = async (req: Request, res: Response): Promise<void> 
         refreshToken,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('OAuth error:', error);
-    res.status(500).json({ success: false, message: 'Internal server error' });
+    res.status(500).json({ success: false, message: error?.message || 'Internal server error' });
   }
 };
