@@ -1,8 +1,41 @@
 import jwt from 'jsonwebtoken';
 import { JwtPayload } from '../types';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_jwt_secret_change_in_production';
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'fallback_refresh_secret_change_in_production';
+const isProduction = process.env.NODE_ENV === 'production';
+
+const getJwtSecret = (): string => {
+  const secret = process.env.JWT_SECRET;
+  if (isProduction) {
+    if (!secret || secret.length < 32) {
+      throw new Error(
+        'FATAL: JWT_SECRET is required in production and must be at least 32 characters long.'
+      );
+    }
+    return secret;
+  }
+  return secret || 'dev_only_jwt_secret_do_not_use_in_production';
+};
+
+const getJwtRefreshSecret = (jwtSecret: string): string => {
+  const refreshSecret = process.env.JWT_REFRESH_SECRET;
+  if (isProduction) {
+    if (!refreshSecret || refreshSecret.length < 32) {
+      throw new Error(
+        'FATAL: JWT_REFRESH_SECRET is required in production and must be at least 32 characters long.'
+      );
+    }
+    if (refreshSecret === jwtSecret) {
+      throw new Error(
+        'FATAL: JWT_REFRESH_SECRET must be distinct from JWT_SECRET in production.'
+      );
+    }
+    return refreshSecret;
+  }
+  return refreshSecret || 'dev_only_refresh_secret_do_not_use_in_production';
+};
+
+const JWT_SECRET = getJwtSecret();
+const JWT_REFRESH_SECRET = getJwtRefreshSecret(JWT_SECRET);
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '15m';
 const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
 

@@ -14,6 +14,24 @@ import { errorHandler, notFound } from './middleware/errorHandler';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Trust reverse proxy for Render / Railway (1 hop)
+app.set('trust proxy', 1);
+
+// Normalize configured frontend origins
+const rawFrontendUrls = process.env.FRONTEND_URL || 'http://localhost:3000';
+const configuredOrigins = rawFrontendUrls
+  .split(',')
+  .map((url) => url.trim().replace(/\/+$/, ''))
+  .filter(Boolean);
+
+const allowedOrigins = new Set<string>(configuredOrigins);
+
+// Always ensure local development origins are permitted in non-production
+if (process.env.NODE_ENV !== 'production') {
+  allowedOrigins.add('http://localhost:3000');
+  allowedOrigins.add('http://127.0.0.1:3000');
+}
+
 // Security middleware
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
@@ -21,7 +39,17 @@ app.use(helmet({
 
 // CORS
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: (origin, callback) => {
+    // Allow server-to-server, health check, or mobile requests with no Origin header
+    if (!origin) {
+      return callback(null, true);
+    }
+    const normalizedOrigin = origin.replace(/\/+$/, '');
+    if (allowedOrigins.has(normalizedOrigin)) {
+      return callback(null, true);
+    }
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
