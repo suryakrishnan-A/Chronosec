@@ -1,0 +1,28 @@
+# Root
+.env
+node_modules/
+dist/
+.next/
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# Backend
+backend/node_modules/
+backend/dist/
+backend/prisma/migrations/
+backend/.env
+
+# Frontend
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env.local
+frontend/.env
+
+# Docker
+postgres_data/
+
+# Archives
+*.zip

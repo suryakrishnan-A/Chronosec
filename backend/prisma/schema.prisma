@@ -1,0 +1,139 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Severity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ThreatStatus {
+  ACTIVE
+  INVESTIGATING
+  RESOLVED
+  FALSE_POSITIVE
+}
+
+enum LogEventType {
+  LOGIN_SUCCESS
+  LOGIN_FAILED
+  LOGOUT
+  PASSWORD_CHANGE
+  ROLE_CHANGE
+  THREAT_DETECTED
+  THREAT_RESOLVED
+  SCAN_STARTED
+  SCAN_COMPLETED
+  USER_CREATED
+  USER_SUSPENDED
+  OTP_GENERATED
+  OTP_VERIFIED
+}
+
+model User {
+  id                String         @id @default(cuid())
+  email             String         @unique
+  username          String         @unique
+  name              String
+  password          String?
+  avatar            String?
+  role              Role           @default(USER)
+  isActive          Boolean        @default(true)
+  emailVerified     Boolean        @default(false)
+  twoFactorEnabled  Boolean        @default(false)
+  otpSecret         String?
+  provider          String?        // "email", "google", "github"
+  providerId        String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  lastLoginAt       DateTime?
+
+  refreshTokens     RefreshToken[]
+  securityLogs      SecurityLog[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  isRevoked Boolean  @default(false)
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+model Threat {
+  id          String       @id @default(cuid())
+  title       String
+  source      String
+  type        String
+  status      ThreatStatus @default(ACTIVE)
+  severity    Severity     @default(MEDIUM)
+  description String
+  ipAddress   String?
+  country     String?
+  timestamp   DateTime     @default(now())
+  resolvedAt  DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@map("threats")
+}
+
+model SecurityLog {
+  id          String       @id @default(cuid())
+  eventType   LogEventType
+  severity    Severity     @default(LOW)
+  description String
+  ipAddress   String?
+  userAgent   String?
+  userId      String?
+  metadata    Json?
+  timestamp   DateTime     @default(now())
+
+  user        User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("security_logs")
+}
+
+model OtpCode {
+  id        String   @id @default(cuid())
+  email     String
+  code      String
+  expiresAt DateTime
+  isUsed    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("otp_codes")
+}
+
+model SystemScan {
+  id           String   @id @default(cuid())
+  status       String   @default("pending") // pending, running, completed, failed
+  threatsFound Int      @default(0)
+  startedAt    DateTime @default(now())
+  completedAt  DateTime?
+  triggeredBy  String?
+
+  @@map("system_scans")
+}

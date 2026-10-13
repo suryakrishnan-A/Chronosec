@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: cybershield_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cybershield
+      POSTGRES_PASSWORD: cybershield_secret
+      POSTGRES_DB: cybershield_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cybershield -d cybershield_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cybershield_backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://cybershield:cybershield_secret@postgres:5432/cybershield_db
+      JWT_SECRET: your_jwt_secret_key_here_change_in_production
+      JWT_REFRESH_SECRET: your_refresh_secret_key_here_change_in_production
+      PORT: 3001
+      NODE_ENV: production
+      FRONTEND_URL: http://localhost:3000
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: cybershield_frontend
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
