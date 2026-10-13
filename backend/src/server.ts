@@ -96,14 +96,10 @@ app.get('/health', async (_req, res) => {
     console.error('Database health check failed:', err);
   }
 
-  const rawDbUrl = process.env.DATABASE_URL || '';
-  const safeDbPrefix = rawDbUrl ? rawDbUrl.slice(0, 15) : null;
-
   res.json({
-    success: true,
+    success: dbStatus === 'connected',
     message: dbStatus === 'connected' ? 'CyberShield AI Backend is healthy' : 'Database connection unavailable',
     database: dbStatus,
-    dbPrefix: safeDbPrefix,
     ...(dbError && { databaseError: dbError }),
     timestamp: new Date().toISOString(),
     version: '1.0.2',
