@@ -1,11 +1,34 @@
 import { PrismaClient } from '@prisma/client';
 
-const rawUrl = process.env.DATABASE_URL?.trim();
-// Strip surrounding single/double quotes if user accidentally pasted them in environment variables
-let databaseUrl = rawUrl ? rawUrl.replace(/^["']|["']$/g, '').trim() : undefined;
+function sanitizeDatabaseUrl(val?: string): string | undefined {
+  if (!val) return undefined;
+  let url = val.trim();
+  // Match protocol start (handles 'psql postgresql://', quotes, prefixes, etc.)
+  const match = url.match(/postgres(?:ql)?:\/\//i);
+  if (match && match.index !== undefined && match.index >= 0) {
+    url = url.slice(match.index);
+  }
+  // Strip trailing quotes, semicolons, and spaces
+  url = url.replace(/['";\s]+$/, '').trim();
+  // Ensure sslmode=require for Neon PostgreSQL
+  if (url.includes('neon.tech') && !url.includes('sslmode=')) {
+    url += url.includes('?') ? '&sslmode=require' : '?sslmode=require';
+  }
+  return url;
+}
 
-if (databaseUrl && databaseUrl.includes('neon.tech') && !databaseUrl.includes('sslmode=')) {
-  databaseUrl += databaseUrl.includes('?') ? '&sslmode=require' : '?sslmode=require';
+if (process.env.DATABASE_URL) {
+  const cleaned = sanitizeDatabaseUrl(process.env.DATABASE_URL);
+  if (cleaned) {
+    process.env.DATABASE_URL = cleaned;
+  }
+}
+
+if (process.env.DIRECT_URL) {
+  const cleaned = sanitizeDatabaseUrl(process.env.DIRECT_URL);
+  if (cleaned) {
+    process.env.DIRECT_URL = cleaned;
+  }
 }
 
 const globalForPrisma = globalThis as unknown as {
@@ -15,7 +38,7 @@ const globalForPrisma = globalThis as unknown as {
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
-    ...(databaseUrl ? { datasources: { db: { url: databaseUrl } } } : {}),
+    ...(process.env.DATABASE_URL ? { datasources: { db: { url: process.env.DATABASE_URL } } } : {}),
     log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
   });
 
