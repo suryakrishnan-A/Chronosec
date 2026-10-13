@@ -1,8 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@config "../../tailwind.config.ts";
 
 @layer base {
   :root {
@@ -175,7 +174,10 @@
 
   /* Stat card */
   .stat-card {
-    @apply glass-card p-5 hover:cyber-glow transition-all duration-300 cursor-default;
+    @apply bg-card/80 backdrop-blur-xl border border-border/50 rounded-xl p-5 transition-all duration-300 cursor-default;
+  }
+  .stat-card:hover {
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.15), 0 0 40px rgba(0, 212, 255, 0.05);
   }
 
   /* Primary button */
